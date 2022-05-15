@@ -1,33 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Presale is Ownable {
+interface IWrapper is IERC20 {
+  function deposit() external payable;
+  function withdraw(uint wad) external;
+}
+
+contract Presale is Ownable, ReentrancyGuard {
 
   address public token;
+  IWrapper internal native;
   address public treasury;
   uint256 public price;
   bool public open;
-  uint256 public maxAllocPerAddress;
 
-  constructor(address _treasury, address _token) {
+  constructor(address _treasury, address _token, address _native) {
     token = _token;
     treasury = _treasury;
     price = 0.0015 ether;
     open = true;
-    maxAllocPerAddress = 10 ** 18 * 30000 + 1;
+    native = IWrapper(_native);
   }
 
-  function buy() external payable {
-    require(IERC20(token).balanceOf(msg.sender) < maxAllocPerAddress, "!too much allocation");
-    uint256 count = 10 ** 18 * msg.value / price;
-    require(count < maxAllocPerAddress/2, "!buying too much");
-    uint256 fee = msg.value / 10;
+  function buy() external payable nonReentrant {
+    uint256 amount = msg.value;
+    native.deposit{value: amount}();
+    uint count = amount/price;
+    count *= 1 ether;
+    require(count < IERC20(token).balanceOf(address(this))/100, "!too much");
     price = price * 10050 / 10000;
-    payable(owner()).transfer(fee);
-    payable(treasury).transfer(msg.value/10*9);
+    native.transfer(owner(), amount/10);
+    native.transfer(treasury, amount/10*9);
     IERC20(token).transfer(msg.sender, count);
   }
 

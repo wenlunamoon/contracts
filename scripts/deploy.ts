@@ -2,6 +2,7 @@ const { ethers, upgrades } = require("hardhat");
 
 const treasury = "0xFb08de74D3DC381d2130e8885BdaD4e558b24145";
 const token = "0x1Cf87CF9e01b4497674570BAA037844A3816B7A9";
+const wrapper = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
 async function main() {
   // const Token = await ethers.getContractFactory("WenLunaMoon");
@@ -9,7 +10,7 @@ async function main() {
   // await token.deployed();
   // console.log("Token deployed to:", token.address);
   const Presale = await ethers.getContractFactory("Presale");
-  const presale = await Presale.deploy(treasury, token);
+  const presale = await Presale.deploy(treasury, token, wrapper);
   await presale.deployed();
   console.log("Presale deployed to:", presale.address);
 }
